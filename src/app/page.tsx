@@ -99,7 +99,6 @@ const WEEKLY_ROUTINE = [
       },
     ],
   },
-  // Friday is rest
   {
     day: "Friday",
     groups: [],
@@ -187,15 +186,14 @@ function archiveWeek(weekState: any) {
 
 function getMonthlyGraphData() {
   const history = getHistory();
-  // Only include weeks from the current month
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
   const days = WEEKLY_ROUTINE.map(d => d.day);
-  const weekLabels = [];
+  const weekLabels: string[] = [];
   const weekData: Record<string, any>[] = days.map(day => ({ name: day }));
   let weekNum = 1;
-  history.forEach((week, idx) => {
+  history.forEach((week: any, idx: number) => {
     const weekDate = new Date(week.weekStart);
     if (weekDate.getMonth() === thisMonth && weekDate.getFullYear() === thisYear) {
       weekLabels.push(`Week ${weekNum}`);
@@ -203,7 +201,7 @@ function getMonthlyGraphData() {
         let done = 0;
         const groups = WEEKLY_ROUTINE[dIdx].groups;
         groups.forEach((g, gIdx) => {
-          g.exercises.forEach((_, eIdx) => {
+          g.exercises.forEach((_: string, eIdx: number) => {
             if (week.state[dIdx]?.[gIdx]?.[eIdx]) done++;
           });
         });
@@ -216,28 +214,35 @@ function getMonthlyGraphData() {
 }
 
 export default function Home() {
+  // Always initialize with safe defaults
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [state, setState] = useState<any>({});
   const [toast, setToast] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showWeekComplete, setShowWeekComplete] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
 
   useEffect(() => {
     setSelectedDay(getTodayWorkoutIndex());
     setState(getInitialState());
+    setClientReady(true);
   }, []);
 
   useEffect(() => {
-    if (selectedDay !== null) {
+    if (selectedDay !== null && clientReady) {
       localStorage.setItem("workout-tracker-state", JSON.stringify(state));
     }
-  }, [state, selectedDay]);
+  }, [state, selectedDay, clientReady]);
 
-  const dayData = selectedDay !== null ? WEEKLY_ROUTINE[selectedDay] : { groups: [] };
+  if (!clientReady || selectedDay === null) {
+    return <div className="min-h-screen flex items-center justify-center text-xl text-orange-400 bg-black">Loading...</div>;
+  }
+
+  const dayData = WEEKLY_ROUTINE[selectedDay];
   const isRestDay = !dayData.groups.length;
-  const totalExercises = dayData.groups.reduce((acc, g) => acc + g.exercises.length, 0);
+  const totalExercises = dayData.groups.reduce((acc: number, g: any) => acc + g.exercises.length, 0);
   const doneExercises = dayData.groups.reduce(
-    (acc, g, gIdx) => acc + g.exercises.filter((_, eIdx) => state[selectedDay]?.[gIdx]?.[eIdx]).length,
+    (acc: number, g: any, gIdx: number) => acc + g.exercises.filter((_: string, eIdx: number) => state[selectedDay]?.[gIdx]?.[eIdx]).length,
     0
   );
   const progress = totalExercises ? Math.round((doneExercises / totalExercises) * 100) : 0;
@@ -261,7 +266,7 @@ export default function Home() {
       const dayIdx = WEEKLY_ROUTINE.findIndex(wd => wd.day === workoutDays[dIdx].day);
       const groups = WEEKLY_ROUTINE[dayIdx].groups;
       return groups.every((g, gIdx) =>
-        g.exercises.every((_, eIdx) => state[dayIdx]?.[gIdx]?.[eIdx])
+        g.exercises.every((_: string, eIdx: number) => state[dayIdx]?.[gIdx]?.[eIdx])
       );
     });
     if (allDone && !showWeekComplete) {
@@ -284,10 +289,6 @@ export default function Home() {
       return () => clearTimeout(t);
     }
   }, [showWeekComplete, state]);
-
-  if (selectedDay === null) {
-    return <div className="min-h-screen flex items-center justify-center text-xl text-orange-400 bg-black">Loading...</div>;
-  }
 
   const handleToggle = (groupIdx: number, exIdx: number) => {
     setState((prev: any) => {
