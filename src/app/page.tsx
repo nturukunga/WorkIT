@@ -1,103 +1,416 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
+const WEEKLY_ROUTINE = [
+  {
+    day: "Monday",
+    groups: [
+      {
+        name: "Chest",
+        time: "7 PM - 8:30 PM",
+        exercises: [
+          "Bench Press",
+          "Incline Dumbbell Press",
+          "Cable Fly",
+          "Push-Ups (Burnout)",
+        ],
+      },
+      {
+        name: "Triceps",
+        time: "8:30 PM - 10 PM",
+        exercises: [
+          "Tricep Dips",
+          "Rope Pushdowns",
+          "Skull Crushers",
+        ],
+      },
+    ],
+  },
+  {
+    day: "Tuesday",
+    groups: [
+      {
+        name: "Back",
+        time: "7 PM - 8:30 PM",
+        exercises: [
+          "Deadlift",
+          "Pull-Ups",
+          "Bent-Over Rows",
+          "T-Bar Rows",
+        ],
+      },
+      {
+        name: "Biceps",
+        time: "8:30 PM - 10 PM",
+        exercises: [
+          "Barbell Curls",
+          "Concentration Curls",
+          "Hammer Curls",
+        ],
+      },
+    ],
+  },
+  {
+    day: "Wednesday",
+    groups: [
+      {
+        name: "Biceps Focus",
+        time: "7 PM - 8:30 PM",
+        exercises: [
+          "Preacher Curls",
+          "Incline Dumbbell Curls",
+          "Cable Bicep Curls",
+        ],
+      },
+      {
+        name: "Triceps Focus",
+        time: "8:30 PM - 10 PM",
+        exercises: [
+          "Overhead Dumbbell Extensions",
+          "Close-Grip Bench Press",
+          "Rope Kickbacks",
+        ],
+      },
+    ],
+  },
+  {
+    day: "Thursday",
+    groups: [
+      {
+        name: "Shoulders",
+        time: "7 PM - 8:30 PM",
+        exercises: [
+          "Overhead Press (Barbell or Dumbbell)",
+          "Arnold Press",
+          "Lateral Raises",
+          "Face Pulls",
+        ],
+      },
+      {
+        name: "Core",
+        time: "8:30 PM - 10 PM",
+        exercises: [
+          "Plank Variations",
+          "Hanging Leg Raises",
+          "Russian Twists",
+          "Cable Woodchoppers",
+        ],
+      },
+    ],
+  },
+  // Friday is rest
+  {
+    day: "Friday",
+    groups: [],
+  },
+  {
+    day: "Saturday",
+    groups: [
+      {
+        name: "Legs",
+        time: "7 PM - 8:30 PM",
+        exercises: [
+          "Squats",
+          "Romanian Deadlifts",
+          "Leg Press",
+          "Walking Lunges",
+        ],
+      },
+      {
+        name: "Cardio/Conditioning",
+        time: "8:30 PM - 10 PM",
+        exercises: [
+          "Stairmaster (10-15 minutes)",
+          "Sled Pushes (if available)",
+          "HIIT Treadmill Runs or Rowing",
+        ],
+      },
+    ],
+  },
+  // Sunday is rest
+  {
+    day: "Sunday",
+    groups: [],
+  },
+];
+
+const WORKOUT_DAYS = [0, 1, 2, 3, 5]; 
+const DAY_TO_INDEX = {
+  Monday: 0,
+  Tuesday: 1,
+  Wednesday: 2,
+  Thursday: 3,
+  Friday: 4,
+  Saturday: 5,
+  Sunday: 6,
+};
+
+function getTodayWorkoutIndex() {
+  const jsDay = new Date().getDay(); 
+  if (jsDay === 0) return 6; 
+  if (jsDay === 6) return 5; 
+  return jsDay - 1;
+}
+
+function getInitialState() {
+  if (typeof window === "undefined") return {};
+  const data = localStorage.getItem("workout-tracker-state");
+  return data ? JSON.parse(data) : {};
+}
+
+const MOTIVATION = [
+  "Grind Mode 🤘🏽, No pain no gain‼️",
+  "Back to the grind! Keep pulling!",
+  "Arms of steel! Pump it up!",
+  "Shoulders strong, core tight!",
+  "Leg day legend! Keep moving!",
+  "Rest and recover!",
+  "Rest and recover!"
+];
+
+function getHistory() {
+  if (typeof window === "undefined") return [];
+  const data = localStorage.getItem("workout-tracker-history");
+  return data ? JSON.parse(data) : [];
+}
+
+function archiveWeek(weekState: any) {
+  const history = getHistory();
+  const weekSummary = {
+    weekStart: new Date().toISOString(),
+    state: weekState,
+  };
+  history.push(weekSummary);
+  localStorage.setItem("workout-tracker-history", JSON.stringify(history));
+}
+
+function getMonthlyGraphData() {
+  const history = getHistory();
+  // Only include weeks from the current month
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const days = WEEKLY_ROUTINE.map(d => d.day);
+  const weekLabels = [];
+  const weekData: Record<string, any>[] = days.map(day => ({ name: day }));
+  let weekNum = 1;
+  history.forEach((week, idx) => {
+    const weekDate = new Date(week.weekStart);
+    if (weekDate.getMonth() === thisMonth && weekDate.getFullYear() === thisYear) {
+      weekLabels.push(`Week ${weekNum}`);
+      days.forEach((day, dIdx) => {
+        let done = 0;
+        const groups = WEEKLY_ROUTINE[dIdx].groups;
+        groups.forEach((g, gIdx) => {
+          g.exercises.forEach((_, eIdx) => {
+            if (week.state[dIdx]?.[gIdx]?.[eIdx]) done++;
+          });
+        });
+        weekData[dIdx][`Week ${weekNum}`] = done;
+      });
+      weekNum++;
+    }
+  });
+  return { data: weekData, weekLabels };
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [state, setState] = useState<any>({});
+  const [toast, setToast] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showWeekComplete, setShowWeekComplete] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    setSelectedDay(getTodayWorkoutIndex());
+    setState(getInitialState());
+  }, []);
+
+  useEffect(() => {
+    if (selectedDay !== null) {
+      localStorage.setItem("workout-tracker-state", JSON.stringify(state));
+    }
+  }, [state, selectedDay]);
+
+  const dayData = selectedDay !== null ? WEEKLY_ROUTINE[selectedDay] : { groups: [] };
+  const isRestDay = !dayData.groups.length;
+  const totalExercises = dayData.groups.reduce((acc, g) => acc + g.exercises.length, 0);
+  const doneExercises = dayData.groups.reduce(
+    (acc, g, gIdx) => acc + g.exercises.filter((_, eIdx) => state[selectedDay]?.[gIdx]?.[eIdx]).length,
+    0
+  );
+  const progress = totalExercises ? Math.round((doneExercises / totalExercises) * 100) : 0;
+
+  useEffect(() => {
+    if (
+      selectedDay !== null &&
+      totalExercises > 0 &&
+      doneExercises === totalExercises
+    ) {
+      setToast(MOTIVATION[selectedDay]);
+      const t = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [doneExercises, totalExercises, selectedDay]);
+
+  useEffect(() => {
+    if (selectedDay === null) return;
+    const workoutDays = WEEKLY_ROUTINE.filter(d => d.groups.length);
+    const allDone = workoutDays.every((_, dIdx) => {
+      const dayIdx = WEEKLY_ROUTINE.findIndex(wd => wd.day === workoutDays[dIdx].day);
+      const groups = WEEKLY_ROUTINE[dayIdx].groups;
+      return groups.every((g, gIdx) =>
+        g.exercises.every((_, eIdx) => state[dayIdx]?.[gIdx]?.[eIdx])
+      );
+    });
+    if (allDone && !showWeekComplete) {
+      setShowConfetti(true);
+      setToast("HULK SMASH");
+      setShowWeekComplete(true);
+      setTimeout(() => setShowConfetti(false), 4000);
+    }
+  }, [state, selectedDay, showWeekComplete]);
+
+  useEffect(() => {
+    if (showWeekComplete) {
+      const t = setTimeout(() => {
+        if (window.confirm("You completed the week! Start a new week?")) {
+          archiveWeek(state);
+          setState({});
+          setShowWeekComplete(false);
+        }
+      }, 4200);
+      return () => clearTimeout(t);
+    }
+  }, [showWeekComplete, state]);
+
+  if (selectedDay === null) {
+    return <div className="min-h-screen flex items-center justify-center text-xl text-orange-400 bg-black">Loading...</div>;
+  }
+
+  const handleToggle = (groupIdx: number, exIdx: number) => {
+    setState((prev: any) => {
+      const newState = { ...prev };
+      newState[selectedDay] = { ...(newState[selectedDay] || {}) };
+      newState[selectedDay][groupIdx] = { ...(newState[selectedDay][groupIdx] || {}) };
+      newState[selectedDay][groupIdx][exIdx] = !newState[selectedDay][groupIdx][exIdx];
+      return newState;
+    });
+  };
+
+  const stats = WEEKLY_ROUTINE.map((day, dIdx) => {
+    if (!day.groups.length) return null;
+    let done = 0, total = 0;
+    day.groups.forEach((g, gIdx) => {
+      g.exercises.forEach((_, eIdx) => {
+        total++;
+        if (state[dIdx]?.[gIdx]?.[eIdx]) done++;
+      });
+    });
+    return { day: day.day, done, total };
+  }).filter(Boolean);
+
+  const { data: graphData, weekLabels } = getMonthlyGraphData();
+
+  return (
+    <div className="min-h-screen bg-black flex flex-col items-center py-8 px-2">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-orange-500 text-black px-6 py-3 rounded-xl shadow-lg font-bold text-lg animate-bounce border-2 border-orange-400 backdrop-blur-md">
+          {toast}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+      <h1 className="text-4xl font-bold mb-2 text-orange-400 drop-shadow-[0_0_10px_rgba(255,115,0,0.8)]">Weekly Tracking</h1>
+      <div className="flex gap-2 mb-8 mt-2">
+        {WEEKLY_ROUTINE.map((d, idx) => (
+          <button
+            key={d.day}
+            className={`px-3 py-1 rounded-full text-sm font-semibold transition-all border-2 backdrop-blur-md bg-black/60 border-orange-400 shadow-[0_2px_10px_rgba(255,115,0,0.2)] ${selectedDay === idx ? "bg-orange-500 text-black border-orange-400" : "text-orange-400 hover:bg-orange-900/40"} ${!d.groups.length ? "opacity-40 cursor-not-allowed" : ""}`}
+            onClick={() => d.groups.length && setSelectedDay(idx)}
+            disabled={!d.groups.length}
+          >
+            {d.day}
+          </button>
+        ))}
+      </div>
+      <div className="w-full max-w-2xl rounded-2xl shadow-lg p-6 mb-8 backdrop-blur-md bg-black/60 border border-orange-400">
+        <h2 className="text-2xl font-semibold mb-2 text-orange-300">{dayData.day}</h2>
+        {isRestDay ? (
+          <div className="text-lg text-orange-200 py-12 text-center">Rest Day! 💤</div>
+        ) : (
+          dayData.groups.map((group, gIdx) => (
+            <div key={group.name} className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg font-bold text-orange-400">{group.name}</span>
+                <span className="text-xs text-orange-200">{group.time}</span>
+              </div>
+              <ul className="space-y-2">
+                {group.exercises.map((ex, eIdx) => (
+                  <li key={ex} className="flex items-center gap-3 p-2 rounded-lg bg-orange-900/30 backdrop-blur-sm">
+                    <input
+                      type="checkbox"
+                      checked={!!state[selectedDay]?.[gIdx]?.[eIdx]}
+                      onChange={() => handleToggle(gIdx, eIdx)}
+                      className="accent-orange-400 w-5 h-5"
+                      id={`ex-${gIdx}-${eIdx}`}
+                    />
+                    <label htmlFor={`ex-${gIdx}-${eIdx}`} className="text-base cursor-pointer select-none text-orange-100">
+                      {ex}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        )}
+        {/* Progress Bar */}
+        {!isRestDay && (
+          <div className="mt-4 mb-2">
+            <div className="w-full h-4 bg-orange-900/40 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-orange-400 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <div className="text-xs text-orange-200 mt-1 text-right">{progress}% complete</div>
+          </div>
+        )}
+      </div>
+      <div className="w-full max-w-2xl rounded-2xl shadow p-6 backdrop-blur-md bg-black/70 border border-orange-400">
+        <h3 className="text-xl font-semibold mb-4 text-orange-400">Weekly Report</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          {stats.map((s: any) => (
+            <div key={s.day} className="flex flex-col items-center">
+              <span className="font-bold text-orange-300">{s.day}</span>
+              <span className="text-lg font-mono mt-1 text-orange-100">
+                {s.done} / {s.total}
+              </span>
+              <span className="text-xs text-orange-400">{s.total === 0 ? "Rest" : s.done === s.total ? "Done!" : "In Progress"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="w-full max-w-2xl rounded-2xl shadow p-6 mt-8 backdrop-blur-md bg-black/80 border border-orange-400">
+        <h3 className="text-xl font-semibold mb-4 text-orange-400">Monthly Training Trends</h3>
+        {graphData.length > 0 && weekLabels.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={graphData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ff7300" opacity={0.2} />
+              <XAxis dataKey="name" stroke="#ff7300" tick={{ fill: '#ff7300', fontWeight: 'bold' }} />
+              <YAxis stroke="#ff7300" tick={{ fill: '#ff7300' }} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #ff7300', color: '#ff7300' }} labelStyle={{ color: '#ff7300' }} />
+              <Legend wrapperStyle={{ color: '#ff7300' }} />
+              {weekLabels.map((w, idx) => (
+                <Line key={w} type="monotone" dataKey={w} stroke="#ff7300" strokeWidth={2 + idx} dot={{ r: 4 + idx, fill: '#ff7300' }} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="text-orange-200">No data yet. Complete a week to see your trends!</div>
+        )}
+      </div>
+      <footer className="mt-10 text-orange-400 text-xs">&copy; {new Date().getFullYear()} Workout Tracker</footer>
     </div>
   );
 }

@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏋️‍♂️ Workout Tracker
 
-## Getting Started
+A visually stunning, glassmorphic workout tracker built with Next.js 15, React, and Tailwind CSS.
 
-First, run the development server:
+## ✨ Features
+- **Weekly Routine:** Displays your custom weekly workout plan (Monday–Thursday, Saturday; Friday & Sunday are rest days)
+- **Interactive Checkboxes:** Mark each exercise as done/not done for every group and day
+- **Weekly Report:** Instantly see your progress for the week (excluding rest days)
+- **State Persistence:** All progress is saved in your browser (localStorage)
+- **Modern UI:** Black & neon orange theme with glassmorphism (frosted glass, glowing accents)
+- **Responsive:** Works great on desktop and mobile
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Getting Started
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+3. **Open your browser:**
+   Visit [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🖌️ Customization
+- **Edit your routine:**
+  - Open `src/app/page.tsx` and modify the `WEEKLY_ROUTINE` array to fit your workout plan.
+- **Change theme:**
+  - Tweak Tailwind classes in `page.tsx` for different neon/glassmorphism effects.
+- **Persistence:**
+  - Progress is stored in `localStorage` under the key `workout-tracker-state`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
+- [Next.js 15 (App Router, React 18)](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [TypeScript](https://www.typescriptlang.org/)
 
-## Learn More
+## 📸 Screenshots
+![screenshot](\public\screengrabs\WorkIT.png)
+![screenshot](\public\screengrabs\Tracking.png)
 
-To learn more about Next.js, take a look at the following resources:
+## 📄 License
+MIT
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Coded with 💻 and 🖤 by Howie **  
+[![Twitter](https://img.shields.io/badge/-@Howie251-1DA1F2?logo=twitter&logoColor=white)](https://twitter.com/Howie251) 
+[![GitHub](https://img.shields.io/badge/-GitHub-181717?logo=github&logoColor=white)](https://github.com/nturukunga)
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Designed for fitness enthusiasts who love a modern, motivating UI. Stay consistent, track your progress, and enjoy the glow!
