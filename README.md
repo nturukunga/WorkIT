@@ -1,4 +1,8 @@
 # 🏋️‍♂️ Workout Tracker
+[![GitHub stars](https://img.shields.io/github/stars/nturukunga/WorkIT?style=social)](https://github.com/nturukunga/WorkIT)
+![MIT License](https://img.shields.io/badge/license-MIT-blue)
+
+| 📱 [Mobile Optimized] | 💻 [Desktop Recommended]
 
 A visually stunning, glassmorphic workout tracker built with Next.js 15, React, and Tailwind CSS.
 
