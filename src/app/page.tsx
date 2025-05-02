@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
+type ExerciseState = Record<number, Record<number, Record<number, boolean>>>;
+type Group = { name: string; time: string; exercises: string[] };
+type Day = { day: string; groups: Group[] };
+
 const WEEKLY_ROUTINE = [
   {
     day: "Monday",
@@ -127,23 +131,11 @@ const WEEKLY_ROUTINE = [
       },
     ],
   },
-  // Sunday is rest
   {
     day: "Sunday",
     groups: [],
   },
 ];
-
-const WORKOUT_DAYS = [0, 1, 2, 3, 5]; 
-const DAY_TO_INDEX = {
-  Monday: 0,
-  Tuesday: 1,
-  Wednesday: 2,
-  Thursday: 3,
-  Friday: 4,
-  Saturday: 5,
-  Sunday: 6,
-};
 
 function getTodayWorkoutIndex() {
   const jsDay = new Date().getDay(); 
@@ -214,11 +206,9 @@ function getMonthlyGraphData() {
 }
 
 export default function Home() {
-  // Always initialize with safe defaults
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [state, setState] = useState<any>({});
+  const [state, setState] = useState<ExerciseState>({});
   const [toast, setToast] = useState<string | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [showWeekComplete, setShowWeekComplete] = useState(false);
   const [clientReady, setClientReady] = useState(false);
 
@@ -234,22 +224,22 @@ export default function Home() {
     }
   }, [state, selectedDay, clientReady]);
 
-  if (!clientReady || selectedDay === null) {
-    return <div className="min-h-screen flex items-center justify-center text-xl text-orange-400 bg-black">Loading...</div>;
-  }
-
-  const dayData = WEEKLY_ROUTINE[selectedDay];
-  const isRestDay = !dayData.groups.length;
-  const totalExercises = dayData.groups.reduce((acc: number, g: any) => acc + g.exercises.length, 0);
-  const doneExercises = dayData.groups.reduce(
-    (acc: number, g: any, gIdx: number) => acc + g.exercises.filter((_: string, eIdx: number) => state[selectedDay]?.[gIdx]?.[eIdx]).length,
-    0
-  );
+  const dayData = clientReady && selectedDay !== null ? WEEKLY_ROUTINE[selectedDay] : null;
+  const isRestDay = dayData ? !dayData.groups.length : false;
+  const totalExercises = dayData ? dayData.groups.reduce((acc: number, g: Group) => acc + g.exercises.length, 0) : 0;
+  const doneExercises = dayData
+    ? dayData.groups.reduce(
+        (acc: number, g: Group, gIdx: number) => acc + g.exercises.filter((_: string, eIdx: number) => state[selectedDay!]?.[gIdx]?.[eIdx]).length,
+        0
+      )
+    : 0;
   const progress = totalExercises ? Math.round((doneExercises / totalExercises) * 100) : 0;
 
   useEffect(() => {
     if (
       selectedDay !== null &&
+      clientReady &&
+      dayData &&
       totalExercises > 0 &&
       doneExercises === totalExercises
     ) {
@@ -257,25 +247,23 @@ export default function Home() {
       const t = setTimeout(() => setToast(null), 3500);
       return () => clearTimeout(t);
     }
-  }, [doneExercises, totalExercises, selectedDay]);
+  }, [doneExercises, totalExercises, selectedDay, clientReady, dayData]);
 
   useEffect(() => {
-    if (selectedDay === null) return;
-    const workoutDays = WEEKLY_ROUTINE.filter(d => d.groups.length);
-    const allDone = workoutDays.every((_, dIdx) => {
-      const dayIdx = WEEKLY_ROUTINE.findIndex(wd => wd.day === workoutDays[dIdx].day);
+    if (selectedDay === null || !clientReady) return;
+    const workoutDays = WEEKLY_ROUTINE.filter((d: Day) => d.groups.length);
+    const allDone = workoutDays.every((_, dIdx: number) => {
+      const dayIdx = WEEKLY_ROUTINE.findIndex((wd: Day) => wd.day === workoutDays[dIdx].day);
       const groups = WEEKLY_ROUTINE[dayIdx].groups;
-      return groups.every((g, gIdx) =>
+      return groups.every((g: Group, gIdx: number) =>
         g.exercises.every((_: string, eIdx: number) => state[dayIdx]?.[gIdx]?.[eIdx])
       );
     });
     if (allDone && !showWeekComplete) {
-      setShowConfetti(true);
       setToast("HULK SMASH");
       setShowWeekComplete(true);
-      setTimeout(() => setShowConfetti(false), 4000);
     }
-  }, [state, selectedDay, showWeekComplete]);
+  }, [state, selectedDay, showWeekComplete, clientReady]);
 
   useEffect(() => {
     if (showWeekComplete) {
@@ -290,21 +278,26 @@ export default function Home() {
     }
   }, [showWeekComplete, state]);
 
+  // Only after all hooks, do an early return for loading
+  if (!clientReady || selectedDay === null || !dayData) {
+    return <div className="min-h-screen flex items-center justify-center text-xl text-orange-400 bg-black">Loading...</div>;
+  }
+
   const handleToggle = (groupIdx: number, exIdx: number) => {
-    setState((prev: any) => {
+    setState((prev: ExerciseState) => {
       const newState = { ...prev };
-      newState[selectedDay] = { ...(newState[selectedDay] || {}) };
-      newState[selectedDay][groupIdx] = { ...(newState[selectedDay][groupIdx] || {}) };
-      newState[selectedDay][groupIdx][exIdx] = !newState[selectedDay][groupIdx][exIdx];
+      newState[selectedDay!] = { ...(newState[selectedDay!] || {}) };
+      newState[selectedDay!][groupIdx] = { ...(newState[selectedDay!][groupIdx] || {}) };
+      newState[selectedDay!][groupIdx][exIdx] = !newState[selectedDay!][groupIdx][exIdx];
       return newState;
     });
   };
 
-  const stats = WEEKLY_ROUTINE.map((day, dIdx) => {
+  const stats = WEEKLY_ROUTINE.map((day: Day, dIdx: number) => {
     if (!day.groups.length) return null;
     let done = 0, total = 0;
-    day.groups.forEach((g, gIdx) => {
-      g.exercises.forEach((_, eIdx) => {
+    day.groups.forEach((g: Group, gIdx: number) => {
+      g.exercises.forEach((_: string, eIdx: number) => {
         total++;
         if (state[dIdx]?.[gIdx]?.[eIdx]) done++;
       });
@@ -351,7 +344,7 @@ export default function Home() {
                   <li key={ex} className="flex items-center gap-3 p-2 rounded-lg bg-orange-900/30 backdrop-blur-sm">
                     <input
                       type="checkbox"
-                      checked={!!state[selectedDay]?.[gIdx]?.[eIdx]}
+                      checked={!!state[selectedDay!]?.[gIdx]?.[eIdx]}
                       onChange={() => handleToggle(gIdx, eIdx)}
                       className="accent-orange-400 w-5 h-5"
                       id={`ex-${gIdx}-${eIdx}`}
