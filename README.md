@@ -41,8 +41,7 @@ A visually stunning, glassmorphic workout tracker built with Next.js 15, React, 
 - [TypeScript](https://www.typescriptlang.org/)
 
 ## 📸 Screenshots
-![screenshot](\public\screengrabs\WorkIT.png)
-![screenshot](\public\screengrabs\Tracking.png)
+![Screenshot 2025-05-02 172805](https://github.com/user-attachments/assets/df5a3e6f-cd58-458c-a47a-aa414aa7a402)
 
 ## 📄 License
 MIT
